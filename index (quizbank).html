@@ -117,16 +117,49 @@ input[type=number]{width:150px;padding:10px;border-radius:10px;border:1px solid 
 .day ul{margin:6px 0 0;padding-left:18px}.day li{margin:3px 0;font-size:15px}
 table{width:100%;border-collapse:collapse;font-size:14px}
 td,th{padding:7px 6px;border-top:1px solid var(--line);text-align:left;vertical-align:top}
+#acct{position:fixed;inset:0;background:#0008;z-index:30;display:none;align-items:center;justify-content:center;padding:16px}
+#acct.on{display:flex}
+#acct .card{width:100%;max-width:420px}
+#acctBtn{display:none;margin:0;white-space:nowrap;background:#ffffff22;color:#fff;border:0;border-radius:999px;padding:7px 12px;font:600 13px inherit;cursor:pointer}
+#acctStatus{font-size:12px;opacity:.85}
+input[type=email],input[type=password]{padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:16px inherit}
+#tipBtn{flex-shrink:0;white-space:nowrap;margin:0;background:#ffffff22;color:#fff;border:0;border-radius:999px;padding:7px 12px;font:600 13px inherit;cursor:pointer}
+#tip{position:fixed;inset:0;background:#0008;z-index:30;display:none;align-items:center;justify-content:center;padding:16px}
+#tip.on{display:flex}
+#tip .card{width:100%;max-width:420px;text-align:center}
+.pay{display:flex;align-items:center;gap:12px;width:100%;border-radius:12px;padding:13px 16px;margin:8px 0;color:#fff;font:700 16px inherit;text-decoration:none}
+.pay i{font-style:normal;width:30px;height:30px;border-radius:50%;background:#ffffff33;display:flex;align-items:center;justify-content:center;font-weight:800}
+.pay.pp{background:#003087}.pay.vm{background:#3D95CE}.pay.ca{background:#00D632}
+.hwrap{max-width:760px;margin:0 auto}
+.htop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.htitle{min-width:0}
+.hactions{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+#acctBtn{border:1px solid #ffffff55;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+@media(min-width:760px){.hactions{flex-direction:row;flex-wrap:wrap;justify-content:flex-end;align-items:center}}
+#tipBtn{background:#ffffff26;border:1px solid #ffffff55}
+#tipBtn:hover,#acctBtn:hover{background:#ffffff40}
+@media(max-width:480px){header h1{font-size:17px}#tipBtn,#acctBtn{font-size:12px;padding:6px 10px}#acctBtn{max-width:185px}.hactions{align-items:stretch}}
+@media(min-width:760px){
+  header{padding:22px 0 16px}.hwrap{padding:0 24px}header h1{font-size:24px}header .sub{font-size:14px}
+  main{padding:0 24px}
+  nav.tabs{justify-content:center}nav.tabs button{flex:0 1 170px}
+  .stats{gap:12px}.stat b{font-size:26px}
+}
+@media(min-width:1100px){.hwrap,main{max-width:980px}.units{grid-template-columns:repeat(4,1fr)}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<header>
-  <h1>🏥 HESI General — Med-Surg Tower</h1>
-  <div class="sub">BSN266 study hospital · 60 patients · 322-question quizbank</div>
+<header><div class="hwrap">
+  <div class="htop">
+    <div class="htitle"><h1>🏥 HESI General — Med-Surg Tower</h1>
+    <div class="sub">BSN266 study hospital · 60 patients · 322-question quizbank</div></div>
+    <div class="hactions"><button id="tipBtn">💜 Fuel a Future Nurse</button><button id="acctBtn">👤 Sign in to Save Progress</button><span id="acctStatus"></span></div>
+  </div>
   <div class="legend">
     <span class="tag t-pri">PRIORITY</span><span class="tag t-med">MED SAFETY</span><span class="tag t-cj">CLINICAL JUDGMENT</span><span class="tag t-lab">LABS</span><span class="tag t-tch">TEACHING</span>
   </div>
-</header>
+</div></header>
 <main>
 
 <!-- DASHBOARD -->
@@ -197,6 +230,16 @@ td,th{padding:7px 6px;border-top:1px solid var(--line);text-align:left;vertical-
 </main>
 
 <div id="chart"></div>
+<div id="tip"><div class="card">
+  <div class="row" style="justify-content:flex-end"><button class="btn ghost" id="tipClose" style="padding:6px 10px">✕</button></div>
+  <div style="font-size:34px">💜</div>
+  <p style="font-weight:600">Med-Surg Heroes is a free study game made for nursing students, by a nursing student. 💜</p>
+  <p class="small">Paying is NOT required… but it is very, very, appreciated. 😅 💜</p>
+  <a class="pay pp" href="https://paypal.me/madilam1" target="_blank" rel="noopener"><i>P</i>PayPal</a>
+  <a class="pay vm" href="https://venmo.com/u/madilam10" target="_blank" rel="noopener"><i>V</i>Venmo</a>
+  <a class="pay ca" href="https://cash.app/$madisonlamoreaux1" target="_blank" rel="noopener"><i>$</i>Cash App</a>
+</div></div>
+<div id="acct"><div class="card"><div class="row" style="justify-content:space-between"><b>☁️ Cloud save</b><button class="btn ghost" id="acctClose" style="padding:6px 10px">✕</button></div><div id="acctBody"></div></div></div>
 
 <nav class="tabs">
   <button data-s="dash" class="on"><span>🏥</span>Hospital</button>
@@ -981,6 +1024,75 @@ $("cChk").onclick=()=>{const v=parseFloat($("cIn").value),ok=Math.abs(v-cur[1])<
 newCalc();
 
 renderDash();
+
+/* ---------- cloud save (Supabase) ---------- */
+// 1) Paste your Supabase Project URL and anon public key (Supabase → Project Settings → API).
+const SUPABASE_URL="https://wuactmyagoeksmesqdfg.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_-5rqGBCERd08AL7lDg2qxA_EogiexGF";
+const APP_ID="hesi266-study-kit";
+const SAVE_KEYS=["h266_res","h266_bres","h266_known","h266_missed"];
+let sb=null,user=null,saveTimer=null,applying=false,lastSaved=null;
+const cloudReady=()=>!!(window.supabase&&SUPABASE_URL.indexOf("PASTE")!==0);
+const _set=store.set.bind(store);
+store.set=(k,v)=>{_set(k,v);if(!applying&&SAVE_KEYS.includes(k)){_set("h266_updated",Date.now());queueSave()}};
+function snapshot(){const d={};SAVE_KEYS.forEach(k=>d[k]=store.get(k,{}));return d}
+const progressCount=d=>SAVE_KEYS.reduce((n,k)=>n+Object.keys(d[k]||{}).length,0);
+function applySnap(d){
+  applying=true;SAVE_KEYS.forEach(k=>_set(k,d[k]||{}));applying=false;
+  res=store.get("h266_res",{});bres=store.get("h266_bres",{});known=store.get("h266_known",{});missed=store.get("h266_missed",{});
+  build();if(curTab==="dash")renderDash();if(curTab==="floor")openFloor(curUnit);if(curTab==="bank"&&!bank.running)renderBank();
+}
+function queueSave(){if(!user)return;clearTimeout(saveTimer);setStatus("Saving…");saveTimer=setTimeout(pushNow,1500)}
+async function pushNow(){
+  if(!user)return;
+  const {error}=await sb.from("study_progress").upsert({user_id:user.id,app:APP_ID,data:snapshot(),updated_at:new Date().toISOString()},{onConflict:"user_id,app"});
+  if(error){setStatus("⚠️ Not saved — "+error.message);return}
+  lastSaved=new Date();setStatus("☁️ Saved "+lastSaved.toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}));
+}
+async function syncOnLogin(){
+  setStatus("Syncing…");
+  const {data,error}=await sb.from("study_progress").select("data,updated_at").eq("user_id",user.id).eq("app",APP_ID).maybeSingle();
+  if(error){setStatus("⚠️ Sync failed — "+error.message);return}
+  const local=snapshot(),localT=store.get("h266_updated",0);
+  if(data&&(progressCount(local)===0||new Date(data.updated_at).getTime()>localT)){applySnap(data.data);_set("h266_updated",new Date(data.updated_at).getTime());lastSaved=new Date(data.updated_at);setStatus("☁️ Progress loaded")}
+  else await pushNow();
+}
+function setStatus(t){const s=$("acctStatus");if(s)s.textContent=t;const b=$("acctBtn");if(b)b.textContent=user?"☁️ "+(user.email||"Account"):"👤 Sign in to Save Progress";}
+function acctModal(open){$("acct").classList.toggle("on",open);renderAcct()}
+function renderAcct(){
+  const el=$("acctBody");
+  if(user){el.innerHTML=`<p>Signed in as <b>${user.email}</b></p><p class="small" id="acctStatus2">${lastSaved?"Last saved "+lastSaved.toLocaleString():"Not saved yet"}</p><p class="small">Your beds, quizbank scores and flashcards save automatically and load on any device you sign in on.</p><div class="row"><button class="btn" id="aSave">Save now</button><button class="btn ghost" id="aOut">Sign out</button></div>`;
+    $("aSave").onclick=async()=>{await pushNow();renderAcct()};
+    $("aOut").onclick=async()=>{await sb.auth.signOut();acctModal(false)};return}
+  el.innerHTML=`<p class="small">Free account so your progress saves to the cloud. Without one, progress stays in this browser only.</p>
+  <input type="email" id="aEmail" placeholder="Email" autocomplete="email" style="width:100%;margin:6px 0">
+  <input type="password" id="aPass" placeholder="Password (6+ characters)" autocomplete="current-password" style="width:100%;margin:6px 0">
+  <div class="row" style="margin-top:6px"><button class="btn" id="aIn">Sign in</button><button class="btn ghost" id="aUp">Create account</button></div>
+  <p class="small" id="aMsg"></p>`;
+  const msg=t=>{const m=$("aMsg");if(m)m.textContent=t},creds=()=>({email:$("aEmail").value.trim(),password:$("aPass").value});
+  $("aIn").onclick=async()=>{msg("Signing in…");const {error}=await sb.auth.signInWithPassword(creds());msg(error?error.message:"")};
+  $("aUp").onclick=async()=>{const c=creds();if(c.password.length<6)return msg("Password needs 6+ characters.");msg("Creating account…");
+    const {data,error}=await sb.auth.signUp({...c,options:{emailRedirectTo:location.href.split("#")[0]}});
+    msg(error?error.message:(data.session?"Account created!":"Check your email to confirm, then sign in."))};
+}
+function initCloud(){
+  if(!cloudReady())return;
+  $("acctBtn").style.display="inline-block";
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  sb.auth.onAuthStateChange((ev,session)=>{
+    const was=user&&user.id;user=session?session.user:null;setStatus(user?(lastSaved?"☁️ Saved":"Signed in"):"");
+    if(user&&user.id!==was){syncOnLogin();if($("acct").classList.contains("on"))renderAcct()}
+    if(!user&&$("acct").classList.contains("on"))renderAcct();
+  });
+  $("acctBtn").onclick=()=>acctModal(true);
+  $("acctClose").onclick=()=>acctModal(false);
+  window.addEventListener("beforeunload",()=>{if(saveTimer){clearTimeout(saveTimer);pushNow()}});
+}
+/* ---------- tips ---------- */
+$("tipBtn").onclick=()=>$("tip").classList.add("on");
+$("tipClose").onclick=()=>$("tip").classList.remove("on");
+$("tip").onclick=e=>{if(e.target.id==="tip")$("tip").classList.remove("on")};
+initCloud();
 </script>
 </body>
 </html>
